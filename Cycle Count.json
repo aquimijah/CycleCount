@@ -1,0 +1,1166 @@
+{
+  "name": "Cycle Count",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1aCXE4Y-MC6JLyjMNvb-zj3e4ykGE1NbjJVc_KxZ-krE/edit?usp=drive_link",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2133858864,
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aCXE4Y-MC6JLyjMNvb-zj3e4ykGE1NbjJVc_KxZ-krE/edit#gid=2133858864"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        272,
+        -192
+      ],
+      "id": "439d37c9-e477-427d-8d48-553c2387d9e5",
+      "name": "GetMB52",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lSBylOUDSeChqCfP",
+          "name": "oathkim"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sortFieldsUi": {
+          "sortField": [
+            {
+              "fieldName": "Category"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.sort",
+      "typeVersion": 1,
+      "position": [
+        960,
+        32
+      ],
+      "id": "363d24df-4f0e-4f9a-9da0-38ca13b82ae4",
+      "name": "SortByCategory"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "bd99509c-75cc-4557-8406-0639a910b686",
+              "leftValue": "={{ $json.Plant }}",
+              "rightValue": "AL46",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": false
+        }
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1328,
+        -496
+      ],
+      "id": "e663832d-7425-47a8-8f32-d0f273413d12",
+      "name": "FilterDavao"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "bd99509c-75cc-4557-8406-0639a910b686",
+              "leftValue": "={{ $json.Plant }}",
+              "rightValue": "AG42",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": false
+        }
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1264,
+        368
+      ],
+      "id": "2fc0545c-058d-4802-b157-880baa30faf0",
+      "name": "FilterCamSur"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all incoming items\nconst items = $input.all();\n\nconst MAX_UNRESTRICTED = 2000;\nconst MIN_UNRESTRICTED = 0.99;\nconst SAMPLE_SIZE = 5;\n\n// ========================================\n// 1. Filter valid rows\n// ========================================\nconst filtered = items.filter(item => {\n  const unrestricted = Number(item.json.Unrestricted);\n\n  return !isNaN(unrestricted) &&\n         unrestricted >= MIN_UNRESTRICTED &&\n         unrestricted <= MAX_UNRESTRICTED;\n});\n\n// ========================================\n// 2. Remove duplicate Materials\n// ========================================\nconst unique = [];\nconst seenMaterials = new Set();\n\nfor (const item of filtered) {\n  const material = String(item.json.Material || '').trim();\n\n  // Skip rows without Material\n  if (!material) continue;\n\n  // Skip duplicate Material\n  if (seenMaterials.has(material)) continue;\n\n  seenMaterials.add(material);\n  unique.push(item);\n}\n\n// ========================================\n// 3. Group by Category\n// ========================================\nconst grouped = {};\n\nfor (const item of unique) {\n  const category = item.json.Category || 'Unknown';\n\n  if (!grouped[category]) {\n    grouped[category] = [];\n  }\n\n  grouped[category].push(item);\n}\n\n// ========================================\n// 4. Randomly select up to 5 per Category\n// ========================================\nconst selected = [];\n\nfor (const [category, rows] of Object.entries(grouped)) {\n\n  // Fisher-Yates shuffle\n  const shuffled = [...rows];\n\n  for (let i = shuffled.length - 1; i > 0; i--) {\n    const j = Math.floor(Math.random() * (i + 1));\n    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];\n  }\n\n  // Select up to 5 unique Materials\n  const selectedRows = shuffled.slice(0, SAMPLE_SIZE);\n\n  selected.push(...selectedRows);\n}\n\n// ========================================\n// 5. Return selected rows\n// ========================================\nreturn selected;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        -496
+      ],
+      "id": "89eb6ccd-0047-4e75-8ac0-ba0ff62a53e3",
+      "name": "5RandomDataDavao"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all incoming items\nconst items = $input.all();\n\nconst MAX_UNRESTRICTED = 2000;\nconst MIN_UNRESTRICTED = 0.99;\nconst SAMPLE_SIZE = 5;\n\n// ========================================\n// 1. Filter valid rows\n// ========================================\nconst filtered = items.filter(item => {\n  const unrestricted = Number(item.json.Unrestricted);\n\n  return !isNaN(unrestricted) &&\n         unrestricted >= MIN_UNRESTRICTED &&\n         unrestricted <= MAX_UNRESTRICTED;\n});\n\n// ========================================\n// 2. Remove duplicate Materials\n// ========================================\nconst unique = [];\nconst seenMaterials = new Set();\n\nfor (const item of filtered) {\n  const material = String(item.json.Material || '').trim();\n\n  // Skip rows without Material\n  if (!material) continue;\n\n  // Skip duplicate Material\n  if (seenMaterials.has(material)) continue;\n\n  seenMaterials.add(material);\n  unique.push(item);\n}\n\n// ========================================\n// 3. Group by Category\n// ========================================\nconst grouped = {};\n\nfor (const item of unique) {\n  const category = item.json.Category || 'Unknown';\n\n  if (!grouped[category]) {\n    grouped[category] = [];\n  }\n\n  grouped[category].push(item);\n}\n\n// ========================================\n// 4. Randomly select up to 5 per Category\n// ========================================\nconst selected = [];\n\nfor (const [category, rows] of Object.entries(grouped)) {\n\n  // Fisher-Yates shuffle\n  const shuffled = [...rows];\n\n  for (let i = shuffled.length - 1; i > 0; i--) {\n    const j = Math.floor(Math.random() * (i + 1));\n    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];\n  }\n\n  // Select up to 5 unique Materials\n  const selectedRows = shuffled.slice(0, SAMPLE_SIZE);\n\n  selected.push(...selectedRows);\n}\n\n// ========================================\n// 5. Return selected rows\n// ========================================\nreturn selected;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        368
+      ],
+      "id": "3a324267-8ee6-418f-9bc8-953a3e3a9657",
+      "name": "5RandomDataCamSur"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "LohnfVHcgRvW6du3",
+          "mode": "list",
+          "cachedResultName": "CYCLE COUNT PRODUCT CLASFFIFICATION DATA",
+          "cachedResultUrl": "/projects/Shu9fgAPRZLjlb41/datatables/LohnfVHcgRvW6du3"
+        },
+        "limit": 100000
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        144,
+        160
+      ],
+      "id": "a37c56f3-3a7e-489c-b927-52e6d6669504",
+      "name": "Get row(s)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7b1799c7-184c-4767-b0f9-10db9508d1bd",
+              "leftValue": "={{ $json['Storage Location'] }}",
+              "rightValue": "S001",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "4504facb-4492-4a09-abc3-5246181ebc33",
+              "leftValue": "={{ $json['Storage Location'] }}",
+              "rightValue": "IM09",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "09aff70f-fe60-48a8-95fa-830dc8129d34",
+              "leftValue": "={{ $json['Storage Location'] }}",
+              "rightValue": "IM10",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        736,
+        32
+      ],
+      "id": "e9588568-b019-48b3-b69a-41c7ccc55c1a",
+      "name": "FilterStorageLocation"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "advanced": true,
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "Material Description",
+              "field2": "Material_Description"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        480,
+        32
+      ],
+      "id": "1deb5648-9a13-459b-bac1-c77847f6e5b3",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "306a9833-4016-49e2-8664-9a158b1fd65b",
+              "name": "Category",
+              "value": "={{ $json.Category }}",
+              "type": "string"
+            },
+            {
+              "id": "f5624b00-3bf5-42b7-8fa6-3ab1e0212f0d",
+              "name": "Material Description",
+              "value": "={{ $json['Material Description'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1744,
+        -496
+      ],
+      "id": "de7c06d8-f267-488c-895c-414c118365da",
+      "name": "Edit Fields Davao"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "306a9833-4016-49e2-8664-9a158b1fd65b",
+              "name": "Category",
+              "value": "={{ $json.Category }}",
+              "type": "string"
+            },
+            {
+              "id": "f5624b00-3bf5-42b7-8fa6-3ab1e0212f0d",
+              "name": "Material Description",
+              "value": "={{ $json['Material Description'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1680,
+        368
+      ],
+      "id": "5563f8b1-9fe9-4346-8c19-283736106331",
+      "name": "Edit Fields CamSur"
+    },
+    {
+      "parameters": {
+        "sendTo": "masmartinez@ifsi.sanmiguel.com.ph",
+        "subject": "=Cycle Count as of {{ $now.setZone('Asia/Manila').toFormat('yyyy-MM-dd HH:mm:ss') }}",
+        "message": "=<p>Dear Ms. Limbaroc and Mr. Alarcon,</p>\n\n<p>\n  Please refer to the link below to access the scheduled SKUs for the cycle count:\n</p>\n\n<p>\n  <a href=\"https://docs.google.com/spreadsheets/d/1oubp52DXb8W3KQDsWAbq3N8Ba-zkpV7e7WP2wfHN2CE/edit?usp=sharing\">\n    <strong>Open Cycle Count Sheet</strong>\n  </a>\n</p>\n\n<p><strong>Reminders:</strong></p>\n\n<ol>\n  <li>\n    Cycle count report should be submitted on or before Saturday,\n    {{ $now.plus({ days: 5 }).toFormat('yyyy-MM-dd') }},\n    on or before 3:00 PM for your strict compliance.\n  </li>\n\n  <li>\n    Kindly also include the Reconciliation Activity Report in cases of inventory inaccuracies.\n  </li>\n\n  <li>\n    Any updates should be communicated immediately following the Cycle Count.\n  </li>\n\n  <li>\n    Please use and submit the standardized format for the Cycle Count Sheet and Cycle Count Result Sheet.\n  </li>\n\n  <li>\n    Ensure all required signatures are completed before submitting the report.\n  </li>\n\n  <li>\n    Please use this thread for your Cycle Count Report submission.\n  </li>\n</ol>\n\n<p>Thank you and regards,</p>\n\n<p>\n  <strong>APPLE</strong>\n</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -336,
+        -144
+      ],
+      "id": "c8a1afae-8dd5-4d90-b951-9fef5a25d508",
+      "name": "Send a message",
+      "webhookId": "6cf948d7-9076-4d1e-8d9c-38b7219f374c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Y0iZJ9xrIk9r9w05",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 10,
+              "triggerAtMinute": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -544,
+        96
+      ],
+      "id": "baa623ea-3356-45e3-bd39-94ff6553b164",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "19308a17-9637-4a24-8ce8-6a1040d38105",
+              "leftValue": "={{ $json.Category }}",
+              "rightValue": "Fresh",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1984,
+        -688
+      ],
+      "id": "574b3539-abad-496d-8aaf-d42f6b2ad07b",
+      "name": "FilterFresh"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "19308a17-9637-4a24-8ce8-6a1040d38105",
+              "leftValue": "={{ $json.Category }}",
+              "rightValue": "Frozen",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1984,
+        -528
+      ],
+      "id": "f5282fd6-d1f8-4311-86c5-aee9222f367b",
+      "name": "FilterFrozen"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "19308a17-9637-4a24-8ce8-6a1040d38105",
+              "leftValue": "={{ $json.Category }}",
+              "rightValue": "M&S",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1984,
+        -384
+      ],
+      "id": "fc54cd9e-73db-4b48-b620-df9d335b6ed0",
+      "name": "FilterM&S"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "19308a17-9637-4a24-8ce8-6a1040d38105",
+              "leftValue": "={{ $json.Category }}",
+              "rightValue": "Marinades",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1984,
+        -240
+      ],
+      "id": "b97414cc-14f9-44d0-acc8-90915105159e",
+      "name": "FilterMarinades"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "documentId": {
+          "__rl": true,
+          "value": "1oubp52DXb8W3KQDsWAbq3N8Ba-zkpV7e7WP2wfHN2CE",
+          "mode": "list",
+          "cachedResultName": "CYCLE COUNT May 15",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1oubp52DXb8W3KQDsWAbq3N8Ba-zkpV7e7WP2wfHN2CE/edit?usp=drivesdk"
+        },
+        "title": "={{ $now.setZone('Asia/Manila').toFormat('yyyy-MM-dd') }}",
+        "options": {
+          "index": 0,
+          "tabColor": "#44FF00"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -80,
+        -144
+      ],
+      "id": "e693d7d2-01c5-4f08-8452-d59de81560ba",
+      "name": "createsheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lSBylOUDSeChqCfP",
+          "name": "oathkim"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/1oubp52DXb8W3KQDsWAbq3N8Ba-zkpV7e7WP2wfHN2CE/values/{{ encodeURIComponent(\"'\" + $('createsheet').first().json.title + \"'!B6:B10\") }}?valueInputOption=USER_ENTERED",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"range\": \"'{{ $now.setZone('Asia/Manila').toFormat('yyyy-MM-dd') }}'!B6:B10\",\n  \"majorDimension\": \"ROWS\",\n  \"values\": {{ JSON.stringify($input.all().map(item => [item.json['Material Description']])) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2224,
+        -688
+      ],
+      "id": "4aeed3cc-61b0-447a-8be9-3333a4955e77",
+      "name": "PutFresh",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lSBylOUDSeChqCfP",
+          "name": "oathkim"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/1oubp52DXb8W3KQDsWAbq3N8Ba-zkpV7e7WP2wfHN2CE/values/{{ encodeURIComponent(\"'\" + $('createsheet').first().json.title + \"'!B11:B15\") }}?valueInputOption=USER_ENTERED",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"range\": \"'{{ $now.setZone('Asia/Manila').toFormat('yyyy-MM-dd') }}'!B11:B15\",\n  \"majorDimension\": \"ROWS\",\n  \"values\": {{ JSON.stringify($input.all().map(item => [item.json['Material Description']])) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2224,
+        -528
+      ],
+      "id": "69d7a861-9033-4760-8288-1f3e8ab71b6f",
+      "name": "PutFrozen",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lSBylOUDSeChqCfP",
+          "name": "oathkim"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/1oubp52DXb8W3KQDsWAbq3N8Ba-zkpV7e7WP2wfHN2CE/values/{{ encodeURIComponent(\"'\" + $('createsheet').first().json.title + \"'!B16:B20\") }}?valueInputOption=USER_ENTERED",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"range\": \"'{{ $now.setZone('Asia/Manila').toFormat('yyyy-MM-dd') }}'!B16:B20\",\n  \"majorDimension\": \"ROWS\",\n  \"values\": {{ JSON.stringify($input.all().map(item => [item.json['Material Description']])) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2224,
+        -384
+      ],
+      "id": "007dbb3d-0a39-44de-a091-ebef2fe04fcd",
+      "name": "PutM&S",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lSBylOUDSeChqCfP",
+          "name": "oathkim"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/1oubp52DXb8W3KQDsWAbq3N8Ba-zkpV7e7WP2wfHN2CE/values/{{ encodeURIComponent(\"'\" + $('createsheet').first().json.title + \"'!B21:B25\") }}?valueInputOption=USER_ENTERED",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"range\": \"'{{ $now.setZone('Asia/Manila').toFormat('yyyy-MM-dd') }}'!B21:B25\",\n  \"majorDimension\": \"ROWS\",\n  \"values\": {{ JSON.stringify($input.all().map(item => [item.json['Material Description']])) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2224,
+        -240
+      ],
+      "id": "08b38746-de7d-4ab0-ac33-ac4cb453ba43",
+      "name": "PutMarinades",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lSBylOUDSeChqCfP",
+          "name": "oathkim"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "19308a17-9637-4a24-8ce8-6a1040d38105",
+              "leftValue": "={{ $json.Category }}",
+              "rightValue": "Fresh",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1968,
+        112
+      ],
+      "id": "fe47641f-76b5-4b93-80fd-2268b231f4c9",
+      "name": "FilterFresh1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "19308a17-9637-4a24-8ce8-6a1040d38105",
+              "leftValue": "={{ $json.Category }}",
+              "rightValue": "Frozen",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1968,
+        272
+      ],
+      "id": "b6ff7bd3-e1bf-45b5-9ee6-52c3307918d5",
+      "name": "FilterFrozen1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "19308a17-9637-4a24-8ce8-6a1040d38105",
+              "leftValue": "={{ $json.Category }}",
+              "rightValue": "M&S",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1968,
+        416
+      ],
+      "id": "9b304e9f-e169-4e36-b9a3-4727d1cdbc3a",
+      "name": "FilterM&S1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "19308a17-9637-4a24-8ce8-6a1040d38105",
+              "leftValue": "={{ $json.Category }}",
+              "rightValue": "Marinades",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1968,
+        560
+      ],
+      "id": "e92991f4-2adc-428e-bc49-2375114d4bdd",
+      "name": "FilterMarinades1"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/1oubp52DXb8W3KQDsWAbq3N8Ba-zkpV7e7WP2wfHN2CE/values/{{ encodeURIComponent(\"'\" + $('createsheet').first().json.title + \"'!E6:E10\") }}?valueInputOption=USER_ENTERED",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"range\": \"'{{ $now.setZone('Asia/Manila').toFormat('yyyy-MM-dd') }}'!E6:E10\",\n  \"majorDimension\": \"ROWS\",\n  \"values\": {{ JSON.stringify($input.all().map(item => [item.json['Material Description']])) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2208,
+        112
+      ],
+      "id": "697c0d87-3c42-4e0e-ba5d-4bb72fc8a7c8",
+      "name": "PutFresh1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lSBylOUDSeChqCfP",
+          "name": "oathkim"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/1oubp52DXb8W3KQDsWAbq3N8Ba-zkpV7e7WP2wfHN2CE/values/{{ encodeURIComponent(\"'\" + $('createsheet').first().json.title + \"'!E11:E15\") }}?valueInputOption=USER_ENTERED",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"range\": \"'{{ $now.setZone('Asia/Manila').toFormat('yyyy-MM-dd') }}'!E11:E15\",\n  \"majorDimension\": \"ROWS\",\n  \"values\": {{ JSON.stringify($input.all().map(item => [item.json['Material Description']])) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2208,
+        272
+      ],
+      "id": "aea04aa8-0b75-4ca8-afd2-466960fd6abf",
+      "name": "PutFrozen1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lSBylOUDSeChqCfP",
+          "name": "oathkim"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/1oubp52DXb8W3KQDsWAbq3N8Ba-zkpV7e7WP2wfHN2CE/values/{{ encodeURIComponent(\"'\" + $('createsheet').first().json.title + \"'!E16:E20\") }}?valueInputOption=USER_ENTERED",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"range\": \"'{{ $now.setZone('Asia/Manila').toFormat('yyyy-MM-dd') }}'!E16:E20\",\n  \"majorDimension\": \"ROWS\",\n  \"values\": {{ JSON.stringify($input.all().map(item => [item.json['Material Description']])) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2208,
+        416
+      ],
+      "id": "586111bb-9ff1-4625-95a2-1926676f6ad1",
+      "name": "PutM&S1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lSBylOUDSeChqCfP",
+          "name": "oathkim"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/1oubp52DXb8W3KQDsWAbq3N8Ba-zkpV7e7WP2wfHN2CE/values/{{ encodeURIComponent(\"'\" + $('createsheet').first().json.title + \"'!E21:E25\") }}?valueInputOption=USER_ENTERED",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"range\": \"'{{ $now.setZone('Asia/Manila').toFormat('yyyy-MM-dd') }}'!E21:E25\",\n  \"majorDimension\": \"ROWS\",\n  \"values\": {{ JSON.stringify($input.all().map(item => [item.json['Material Description']])) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2208,
+        560
+      ],
+      "id": "51313ecc-cc27-4c99-b170-3e5691c5cd29",
+      "name": "PutMarinades1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lSBylOUDSeChqCfP",
+          "name": "oathkim"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "GetMB52": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SortByCategory": {
+      "main": [
+        [
+          {
+            "node": "FilterDavao",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FilterCamSur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FilterDavao": {
+      "main": [
+        [
+          {
+            "node": "5RandomDataDavao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FilterCamSur": {
+      "main": [
+        [
+          {
+            "node": "5RandomDataCamSur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5RandomDataCamSur": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields CamSur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "FilterStorageLocation": {
+      "main": [
+        [
+          {
+            "node": "SortByCategory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "FilterStorageLocation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5RandomDataDavao": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields Davao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields Davao": {
+      "main": [
+        [
+          {
+            "node": "FilterFresh",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FilterFrozen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FilterM&S",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FilterMarinades",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields CamSur": {
+      "main": [
+        [
+          {
+            "node": "FilterFresh1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FilterFrozen1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FilterM&S1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FilterMarinades1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FilterFresh": {
+      "main": [
+        [
+          {
+            "node": "PutFresh",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "createsheet": {
+      "main": [
+        [
+          {
+            "node": "GetMB52",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FilterFrozen": {
+      "main": [
+        [
+          {
+            "node": "PutFrozen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FilterM&S": {
+      "main": [
+        [
+          {
+            "node": "PutM&S",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FilterMarinades": {
+      "main": [
+        [
+          {
+            "node": "PutMarinades",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "createsheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FilterFresh1": {
+      "main": [
+        [
+          {
+            "node": "PutFresh1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FilterFrozen1": {
+      "main": [
+        [
+          {
+            "node": "PutFrozen1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FilterM&S1": {
+      "main": [
+        [
+          {
+            "node": "PutM&S1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FilterMarinades1": {
+      "main": [
+        [
+          {
+            "node": "PutMarinades1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "Asia/Manila",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "e3457d56-fd5d-41bf-a101-72c9a683679d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aa778c9e9d520348a7a1da30b90ead52c86619c52fe7f4e7e79aec54fadb28a2"
+  },
+  "nodeGroups": [],
+  "id": "t0twkI6Ho8kty0JZ",
+  "tags": []
+}
